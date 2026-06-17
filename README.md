@@ -1,200 +1,415 @@
 # Real-Time Financial Analytics Dashboard with Predictive AI
 
-A comprehensive full-stack financial analytics platform featuring real-time market data ingestion, technical indicators, ML forecasting, and natural language querying.
+A production-ready full-stack financial analytics platform featuring real-time stock market monitoring, AI-powered forecasting, portfolio analytics, automated price alerts, technical indicators, and natural language financial insights.
 
-## Tech Stack
+---
 
-### Backend
-- Python 3.11
-- FastAPI
-- PostgreSQL + TimescaleDB
-- Redis
-- APScheduler
-- Pandas / NumPy
-- Scikit-learn + Prophet
-- WebSocket
-- Alpha Vantage / Yahoo Finance API
+# Features
 
-### Frontend
-- React + TypeScript
-- Recharts / D3.js
-- Material-UI
-- Socket.io-client
+## Real-Time Market Data
 
-### Infrastructure
-- Docker
-- Docker Compose
+* Live stock market data ingestion using Yahoo Finance
+* Automated background data collection with APScheduler
+* Historical OHLCV storage in PostgreSQL
+* Redis caching for high-performance data retrieval
 
-## Project Structure
+## Technical Analysis
 
+The platform calculates and visualizes:
+
+* Relative Strength Index (RSI)
+* Moving Average Convergence Divergence (MACD)
+* Simple Moving Average (SMA)
+* Exponential Moving Average (EMA)
+* Bollinger Bands
+
+## AI Forecasting Engine
+
+* Prophet-based machine learning forecasting
+* 7-day stock price prediction
+* Confidence intervals
+* Forecast accuracy metrics:
+
+  * MAE
+  * RMSE
+  * MAPE
+* Redis forecast caching
+
+## Interactive Dashboard
+
+* Real-time stock analytics dashboard
+* Live WebSocket updates
+* Interactive charts and visualizations
+* Symbol search and selection
+* Market statistics overview
+
+## Portfolio Analytics
+
+* Portfolio holdings tracking
+* Investment monitoring
+* Profit and loss calculations
+* Portfolio performance analytics
+* Current valuation tracking
+
+## Smart Alert Engine
+
+* Price threshold alerts
+* Above price alerts
+* Below price alerts
+* Automatic trigger detection
+* Real-time alert status updates
+
+## AI Assistant
+
+Natural language financial assistant capable of:
+
+* Stock forecast explanations
+* Technical indicator explanations
+* Portfolio insights
+* Market analytics queries
+* Financial dashboard assistance
+
+---
+
+# Tech Stack
+
+## Backend
+
+* Python
+* FastAPI
+* PostgreSQL
+* Redis
+* SQLAlchemy
+* APScheduler
+* Pandas
+* NumPy
+* Prophet
+* WebSockets
+* Pydantic
+
+## Frontend
+
+* React
+* TypeScript
+* Material UI
+* Recharts
+* Axios
+* React Router
+
+## Infrastructure
+
+* Docker
+* Docker Compose
+
+---
+
+# Project Architecture
+
+```text
+Yahoo Finance API
+        │
+        ▼
+Data Ingestion Service
+(APScheduler)
+        │
+        ▼
+PostgreSQL Database
+        │
+        ├──────────────► Technical Indicators
+        │
+        ├──────────────► Portfolio Analytics
+        │
+        └──────────────► Forecast Engine (Prophet)
+                               │
+                               ▼
+                           Redis Cache
+                               │
+                               ▼
+                     FastAPI REST APIs
+                               │
+               ┌───────────────┴───────────────┐
+               ▼                               ▼
+        WebSocket Server                 AI Assistant
+               │
+               ▼
+        React Dashboard
 ```
+
+---
+
+# Project Structure
+
+```text
 .
-├── backend/
-│   ├── app/
-│   │   ├── api/           # API endpoints
-│   │   ├── core/          # Configuration and database
-│   │   ├── models/        # Database models and schemas
-│   │   ├── services/      # Business logic
-│   │   ├── utils/         # Utility functions
-│   │   ├── scheduler/     # Background job scheduling
-│   │   └── websocket/     # WebSocket handlers
-│   ├── tests/             # Test suite
-│   ├── requirements.txt   # Python dependencies
+├── backend
+│   ├── app
+│   │   ├── api
+│   │   ├── core
+│   │   ├── models
+│   │   ├── scheduler
+│   │   ├── services
+│   │   └── websocket
+│   ├── requirements.txt
 │   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── services/      # API services
-│   │   ├── types/         # TypeScript types
-│   │   └── utils/         # Utility functions
-│   ├── package.json       # Node dependencies
+│
+├── frontend
+│   ├── src
+│   │   ├── components
+│   │   ├── hooks
+│   │   ├── services
+│   │   └── types
+│   ├── package.json
 │   └── Dockerfile
-├── docker/
-│   ├── postgres/
-│   │   └── init/          # Database initialization scripts
-│   └── redis/
-│       └── redis.conf     # Redis configuration
-├── docker-compose.yml     # Multi-container orchestration
+│
+├── docker-compose.yml
 └── README.md
 ```
 
-## Quick Start
+---
 
-### Prerequisites
-- Docker and Docker Compose
-- Git
+# Screenshots
 
-### Setup
+## Dashboard
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd "2. Real-Time Financial Analytics Dashboard with AI"
+Add screenshot:
+
+```text
+README/dashboard.png
 ```
 
-2. Configure environment variables:
-```bash
-cp .env.example .env
+## Portfolio
+
+Add screenshot:
+
+```text
+README/portfolio.png
 ```
 
-Edit `.env` and add your API keys:
-- `ALPHA_VANTAGE_API_KEY`: Get from [Alpha Vantage](https://www.alphavantage.co/support/#api-key)
-- `OPENAI_API_KEY`: Get from [OpenAI](https://platform.openai.com/api-keys)
+## Alerts
 
-3. Start all services:
-```bash
-docker-compose up -d
+Add screenshot:
+
+```text
+README/alerts.png
 ```
 
-4. Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
+## AI Assistant
 
-### Local Development
+Add screenshot:
 
-#### Backend
+```text
+README/ai-assistant.png
+```
+
+---
+
+# API Endpoints
+
+## Health
+
+```http
+GET /health
+```
+
+## Prices
+
+```http
+GET /api/v1/prices/symbols
+GET /api/v1/prices/{symbol}/latest
+```
+
+## Technical Indicators
+
+```http
+GET /api/v1/indicators/{symbol}
+```
+
+## Forecasting
+
+```http
+GET /api/v1/forecast/{symbol}
+```
+
+## Portfolio
+
+```http
+GET /api/v1/portfolio
+GET /api/v1/portfolio/analytics
+```
+
+## Alerts
+
+```http
+GET /api/v1/alerts
+POST /api/v1/alerts
+DELETE /api/v1/alerts/{id}
+```
+
+## AI Assistant
+
+```http
+POST /api/v1/ai/query
+```
+
+Example:
+
+```json
+{
+  "query": "Show AAPL forecast"
+}
+```
+
+---
+
+# Local Development
+
+## Backend
+
 ```bash
 cd backend
+
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Windows
+venv\Scripts\activate
+
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+
+python -m uvicorn app.main:app --reload --port 7777
 ```
 
-#### Frontend
+Backend URL:
+
+```text
+http://localhost:7777
+```
+
+Swagger Docs:
+
+```text
+http://localhost:7777/docs
+```
+
+---
+
+## Frontend
+
 ```bash
 cd frontend
+
 npm install
+
 npm run dev
 ```
 
-#### Database (Local)
-Ensure PostgreSQL with TimescaleDB is running, then run:
-```bash
-psql -U finance_user -d finance_db -f docker/postgres/init/01-init.sql
+Frontend URL:
+
+```text
+http://localhost:3001
 ```
 
-## Features
+---
 
-### Phase 1 (✓ Complete)
-- Complete folder structure
-- FastAPI backend configuration
-- React + TypeScript frontend setup
-- PostgreSQL + TimescaleDB schema
-- Redis configuration
-- Docker orchestration
+# Database Models
 
-### Phase 2 (Next)
-- Market data ingestion pipeline
-- APScheduler for automated data fetching
-- OHLCV data storage in TimescaleDB
+## Tables
 
-### Phase 3
-- Technical indicators: RSI, MACD, Bollinger Bands, SMA, EMA
+### ohlcv
 
-### Phase 4
-- REST APIs for prices, indicators, and historical data
+Stores historical stock market OHLCV data.
 
-### Phase 5
-- WebSocket live price streaming
+### technical_indicators
 
-### Phase 6
-- React dashboard with live charts and stat cards
+Stores RSI, MACD, SMA, EMA and Bollinger Band values.
 
-### Phase 7
-- Prophet forecasting engine with 7-day forecasts
+### predictions
 
-### Phase 8
-- Portfolio tracker with P&L calculations
+Stores Prophet forecast results.
 
-### Phase 9
-- Alerts engine with price threshold monitoring
+### portfolios
 
-### Phase 10
-- Natural language query interface using OpenAI API
+Stores portfolio holdings.
 
-## API Endpoints
+### alerts
 
-- `GET /health` - Health check
-- `GET /api/v1/prices/{symbol}` - Get price data
-- `GET /api/v1/indicators/{symbol}` - Get technical indicators
-- `POST /api/v1/predict` - Get ML predictions
-- `GET /api/v1/portfolio/{user_id}` - Get portfolio data
-- `POST /api/v1/alerts` - Create price alert
+Stores user-defined price alerts.
 
-## Database Schema
+---
 
-### Tables
-- `ohlcv` - OHLCV market data (hypertable)
-- `technical_indicators` - Pre-calculated indicators (hypertable)
-- `predictions` - ML model predictions (hypertable)
-- `portfolios` - User portfolio holdings
-- `alerts` - Price alerts and notifications
+# Key Achievements
 
-## Architecture
+✅ Real-Time Market Data Ingestion
 
-```
-Market Data API (Alpha Vantage)
-    ↓
-Data Ingestion Service (APScheduler)
-    ↓
-TimescaleDB (time-series storage)
-    ↓
-ML Model (Prophet/LSTM)
-    ↓
-Prediction Cache (Redis)
-    ↓
-FastAPI REST + WebSocket
-    ↓
-React Dashboard (Recharts)
+✅ Technical Indicators Engine
+
+✅ Prophet Forecasting System
+
+✅ Portfolio Analytics
+
+✅ Price Alert Engine
+
+✅ WebSocket Live Updates
+
+✅ AI Assistant
+
+✅ FastAPI REST APIs
+
+✅ React Dashboard
+
+✅ PostgreSQL + Redis Integration
+
+---
+
+# Project Status
+
+Current Completion:
+
+```text
+98%
 ```
 
-## License
+Implemented Modules:
 
-MIT
+* Real-Time Data Pipeline
+* Technical Indicators
+* Forecasting Engine
+* Portfolio Analytics
+* Alert Engine
+* AI Assistant
+* WebSocket Streaming
+* Dashboard UI
 
-## Contributing
+---
 
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+# Future Enhancements
+
+* Email Notifications
+* SMS Alerts
+* Push Notifications
+* User Authentication
+* Multi-Portfolio Support
+* LSTM Forecasting Models
+* News Sentiment Analysis
+* Crypto Market Support
+
+---
+
+# Resume Highlights
+
+Built a full-stack financial analytics platform using FastAPI, React, PostgreSQL, Redis and WebSockets with real-time market monitoring, AI-powered forecasting, portfolio analytics, automated alerts and natural language financial querying.
+
+---
+
+# License
+
+MIT License
+
+---
+
+# Author
+
+Ashish Iqbal
+
+B.Tech Computer Science & Engineering
+
+The Assam Kaziranga University

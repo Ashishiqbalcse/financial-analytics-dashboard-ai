@@ -1,199 +1,378 @@
+import asyncio
+import logging
+from datetime import datetime
+from typing import List
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from sqlalchemy.orm import Session
+
+from app.core.config import settings
 from app.core.database import SessionLocal
+from app.models.market_data import Alert
 from app.services.data_ingestion import DataIngestionService
 from app.services.market_data import market_data_service
 from app.services.forecasting import forecasting_service
 from app.websocket.connection_manager import manager
-from app.core.config import settings
-from datetime import datetime
-import logging
-from typing import List
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class DataIngestionScheduler:
-    """Scheduler for automated market data ingestion"""
-    
+    """Scheduler for market ingestion, forecasting and alerts"""
+
     def __init__(self):
-        self.scheduler = AsyncIOScheduler(timezone=settings.SCHEDULER_TIMEZONE)
-        # Default symbols to track
+        self.scheduler = AsyncIOScheduler(
+            timezone=settings.SCHEDULER_TIMEZONE
+        )
+
         self.symbols_to_track = [
-            "AAPL",  # Apple
-            "TSLA",  # Tesla
-            "GOOGL", # Google
-            "MSFT",  # Microsoft
-            "AMZN",  # Amazon
-            "META",  # Meta
-            "NVDA",  # NVIDIA
-            "JPM",   # JPMorgan
+            "AAPL",
+            "TSLA",
+            "GOOGL",
+            "MSFT",
+            "AMZN",
+            "META",
+            "NVDA",
+            "JPM",
         ]
-        
+
     def start(self):
-        """Start the scheduler"""
+        """Start scheduler"""
+
         try:
-            # Schedule data ingestion every minute
             self.scheduler.add_job(
                 self.ingest_all_symbols,
                 trigger=IntervalTrigger(minutes=1),
-                id='ingest_all_symbols',
-                name='Ingest data for all tracked symbols',
-                replace_existing=True
+                id="ingest_all_symbols",
+                replace_existing=True,
             )
-            
-            # Schedule historical data ingestion every hour
+
             self.scheduler.add_job(
                 self.ingest_historical_data,
                 trigger=IntervalTrigger(hours=1),
-                id='ingest_historical',
-                name='Ingest historical data',
-                replace_existing=True
+                id="ingest_historical",
+                replace_existing=True,
             )
-            
-            # Schedule data cleanup daily
+
             self.scheduler.add_job(
                 self.cleanup_old_data,
                 trigger=IntervalTrigger(hours=24),
-                id='cleanup_data',
-                name='Clean up old data',
-                replace_existing=True
+                id="cleanup_data",
+                replace_existing=True,
             )
-            
-            # Schedule model retraining every 6 hours
+
             self.scheduler.add_job(
                 self.retrain_forecast_models,
                 trigger=IntervalTrigger(hours=6),
-                id='retrain_models',
-                name='Retrain forecast models',
-                replace_existing=True
+                id="retrain_models",
+                replace_existing=True,
             )
-            
+
             self.scheduler.start()
-            logger.info("Data ingestion scheduler started successfully")
-            
+
+            asyncio.create_task(
+                self.ingest_historical_data()
+            )
+
+            logger.info(
+                "Scheduler started successfully"
+            )
+
         except Exception as e:
-            logger.error(f"Error starting scheduler: {e}")
-    
+            logger.error(
+                f"Scheduler startup failed: {e}"
+            )
+
     def stop(self):
-        """Stop the scheduler"""
+        """Stop scheduler"""
+
         try:
-            self.scheduler.shutdown()
-            logger.info("Data ingestion scheduler stopped")
+            self.scheduler.shutdown(wait=False)
+            logger.info("Scheduler stopped")
+
         except Exception as e:
-            logger.error(f"Error stopping scheduler: {e}")
-    
+            logger.error(
+                f"Scheduler shutdown failed: {e}"
+            )
+
     async def ingest_all_symbols(self):
-        """Ingest real-time data for all tracked symbols"""
+        """Realtime market ingestion"""
+
         db = SessionLocal()
+
         try:
-            ingestion_service = DataIngestionService(db)
-            results = await ingestion_service.ingest_multiple_symbols(self.symbols_to_track)
-            
-            logger.info(f"Data ingestion completed: {len(results['success'])} success, {len(results['failed'])} failed")
-            
-            # Broadcast price updates via WebSocket for successful ingestions
-            for symbol in results['success']:
+            service = DataIngestionService(db)
+
+            results = await service.ingest_multiple_symbols(
+                self.symbols_to_track
+            )
+
+            logger.info(
+                f"Ingestion completed | "
+                f"Success={len(results['success'])} "
+                f"Failed={len(results['failed'])}"
+            )
+
+            await self.check_alerts()
+
+            for symbol in results["success"]:
+
                 try:
-                    price_data = await market_data_service.get_realtime_price(symbol)
+                    price_data = (
+                        await market_data_service
+                        .get_realtime_price(symbol)
+                    )
+
                     if price_data:
-                        await manager.broadcast_price(symbol, price_data)
-                        logger.info(f"Broadcasted price update for {symbol}")
+                        await manager.broadcast_price(
+                            symbol,
+                            price_data
+                        )
+
                 except Exception as e:
-                    logger.error(f"Error broadcasting price for {symbol}: {e}")
-            
-            if results['failed']:
-                logger.warning(f"Failed symbols: {results['failed']}")
-                
+                    logger.error(
+                        f"Broadcast failed for "
+                        f"{symbol}: {e}"
+                    )
+
         except Exception as e:
-            logger.error(f"Error in ingest_all_symbols job: {e}")
+            logger.error(
+                f"Realtime ingestion failed: {e}"
+            )
+
         finally:
             db.close()
-    
+
     async def ingest_historical_data(self):
-        """Ingest historical data for all tracked symbols"""
+        """Historical ingestion"""
+
         db = SessionLocal()
+
         try:
-            ingestion_service = DataIngestionService(db)
-            
+            service = DataIngestionService(db)
+
             for symbol in self.symbols_to_track:
-                records = await ingestion_service.ingest_historical_data(symbol, period="1mo")
-                logger.info(f"Added {records} historical records for {symbol}")
-                
-        except Exception as e:
-            logger.error(f"Error in ingest_historical_data job: {e}")
-        finally:
-            db.close()
-    
-    def cleanup_old_data(self):
-        """Clean up old data (older than 30 days)"""
-        db = SessionLocal()
-        try:
-            ingestion_service = DataIngestionService(db)
-            
-            for symbol in self.symbols_to_track:
-                deleted = ingestion_service.delete_old_data(symbol, days_to_keep=30)
-                logger.info(f"Deleted {deleted} old records for {symbol}")
-                
-        except Exception as e:
-            logger.error(f"Error in cleanup_old_data job: {e}")
-        finally:
-            db.close()
-    
-    async def retrain_forecast_models(self):
-        """Retrain forecast models for all tracked symbols"""
-        try:
-            logger.info("Starting forecast model retraining")
-            
-            for symbol in self.symbols_to_track:
+
                 try:
-                    # Retrain model
-                    model_data = forecasting_service.train_model(symbol, periods=7)
-                    logger.info(f"Retrained forecast model for {symbol}")
-                    
-                    # Broadcast model update via WebSocket
-                    await manager.broadcast_price(symbol, {
-                        'type': 'model_update',
-                        'symbol': symbol,
-                        'metrics': model_data['metrics'],
-                        'timestamp': datetime.utcnow().isoformat()
-                    })
-                    
+                    records = (
+                        await service
+                        .ingest_historical_data(
+                            symbol,
+                            period="1mo"
+                        )
+                    )
+
+                    logger.info(
+                        f"{symbol}: "
+                        f"{records} rows added"
+                    )
+
                 except Exception as e:
-                    logger.error(f"Error retraining model for {symbol}: {e}")
-            
-            logger.info("Forecast model retraining completed")
-            
+                    logger.error(
+                        f"Historical ingestion "
+                        f"failed for {symbol}: {e}"
+                    )
+
         except Exception as e:
-            logger.error(f"Error in retrain_forecast_models job: {e}")
-    
+            logger.error(
+                f"Historical job failed: {e}"
+            )
+
+        finally:
+            db.close()
+
+    def cleanup_old_data(self):
+        """Cleanup old OHLCV records"""
+
+        db = SessionLocal()
+
+        try:
+            service = DataIngestionService(db)
+
+            for symbol in self.symbols_to_track:
+
+                deleted = service.delete_old_data(
+                    symbol,
+                    days_to_keep=30
+                )
+
+                logger.info(
+                    f"{symbol}: "
+                    f"{deleted} records deleted"
+                )
+
+        except Exception as e:
+            logger.error(
+                f"Cleanup failed: {e}"
+            )
+
+        finally:
+            db.close()
+
+    async def retrain_forecast_models(self):
+        """Retrain forecasting models"""
+
+        try:
+            logger.info(
+                "Starting model retraining"
+            )
+
+            for symbol in self.symbols_to_track:
+
+                try:
+                    model_data = (
+                        forecasting_service
+                        .train_model(
+                            symbol,
+                            periods=7
+                        )
+                    )
+
+                    await manager.broadcast_price(
+                        symbol,
+                        {
+                            "type": "model_update",
+                            "symbol": symbol,
+                            "metrics": model_data.get(
+                                "metrics",
+                                {}
+                            ),
+                            "timestamp":
+                                datetime.utcnow()
+                                .isoformat()
+                        }
+                    )
+
+                    logger.info(
+                        f"Model retrained: {symbol}"
+                    )
+
+                except Exception as e:
+                    logger.error(
+                        f"Retraining failed "
+                        f"for {symbol}: {e}"
+                    )
+
+        except Exception as e:
+            logger.error(
+                f"Retraining job failed: {e}"
+            )
+
+    async def check_alerts(self):
+        """Check alert conditions"""
+
+        db = SessionLocal()
+
+        try:
+            alerts = (
+                db.query(Alert)
+                .filter(
+                    Alert.is_active == True,
+                    Alert.triggered == False
+                )
+                .all()
+            )
+
+            for alert in alerts:
+
+                try:
+                    price_data = (
+                        await market_data_service
+                        .get_realtime_price(
+                            alert.symbol
+                        )
+                    )
+
+                    if not price_data:
+                        continue
+
+                    current_price = (
+                        price_data.get(
+                            "current_price"
+                        )
+                    )
+
+                    if current_price is None:
+                        continue
+
+                    triggered = False
+
+                    if (
+                        alert.condition == "above"
+                        and current_price >= alert.target_price
+                    ):
+                        triggered = True
+
+                    elif (
+                        alert.condition == "below"
+                        and current_price <= alert.target_price
+                    ):
+                        triggered = True
+
+                    if triggered:
+
+                        alert.triggered = True
+                        alert.is_active = False
+
+                        if hasattr(
+                            alert,
+                            "triggered_at"
+                        ):
+                            alert.triggered_at = (
+                                datetime.utcnow()
+                            )
+
+                        db.commit()
+
+                        logger.info(
+                            f"ALERT TRIGGERED | "
+                            f"{alert.symbol}"
+                        )
+
+                        await manager.broadcast_alert(
+                            "system",
+                            {
+                                "symbol": alert.symbol,
+                                "condition": alert.condition,
+                                "target_price": alert.target_price,
+                                "current_price": current_price,
+                            }
+                        )
+
+                except Exception as e:
+                    logger.error(
+                        f"Alert processing error: {e}"
+                    )
+
+        except Exception as e:
+            logger.error(
+                f"Alert scan failed: {e}"
+            )
+
+        finally:
+            db.close()
+
     def add_symbol(self, symbol: str):
-        """Add a symbol to the tracking list"""
+        symbol = symbol.upper()
+
         if symbol not in self.symbols_to_track:
             self.symbols_to_track.append(symbol)
-            logger.info(f"Added {symbol} to tracking list")
-        else:
-            logger.warning(f"{symbol} is already being tracked")
-    
+
     def remove_symbol(self, symbol: str):
-        """Remove a symbol from the tracking list"""
+        symbol = symbol.upper()
+
         if symbol in self.symbols_to_track:
             self.symbols_to_track.remove(symbol)
-            logger.info(f"Removed {symbol} from tracking list")
-        else:
-            logger.warning(f"{symbol} is not being tracked")
-    
+
     def get_tracked_symbols(self) -> List[str]:
-        """Get list of tracked symbols"""
         return self.symbols_to_track.copy()
-    
+
     def set_symbols(self, symbols: List[str]):
-        """Set the list of symbols to track"""
-        self.symbols_to_track = symbols
-        logger.info(f"Updated tracked symbols to: {symbols}")
+        self.symbols_to_track = [
+            s.upper()
+            for s in symbols
+        ]
 
 
-# Global scheduler instance
 scheduler = DataIngestionScheduler()

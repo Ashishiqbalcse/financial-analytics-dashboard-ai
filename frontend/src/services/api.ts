@@ -1,32 +1,59 @@
-import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+import axios from "axios";
+
+const API_BASE_URL =
+  "http://127.0.0.1:7777/api/v1";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type":
+      "application/json",
   },
+
+  timeout: 30000,
 });
 
-// Request interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const token =
+      localStorage.getItem(
+        "token"
+      );
+
+    if (
+      token &&
+      config.headers
+    ) {
+      config.headers.Authorization =
+        `Bearer ${token}`;
     }
+
     return config;
   },
-  (error) => Promise.reject(error)
+
+  (error) => {
+    return Promise.reject(
+      error
+    );
+  }
 );
 
-// Response interceptor
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
+
   (error) => {
-    console.error('API Error:', error);
-    return Promise.reject(error);
+    console.error(
+      "API Error:",
+      error
+    );
+
+    return Promise.reject(
+      error
+    );
   }
 );
 

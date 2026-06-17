@@ -11,6 +11,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { label: 'Portfolio', path: '/portfolio' },
     { label: 'Alerts', path: '/alerts' },
     { label: 'Predictions', path: '/predictions' },
+    { label: 'AI Assistant', path: '/assistant' },
   ];
 
   return (

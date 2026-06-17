@@ -1,10 +1,10 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import Dashboard from './components/Dashboard';
 import Portfolio from './components/Portfolio';
 import Alerts from './components/Alerts';
 import Predictions from './components/Predictions';
+import AIAssistant from './components/AIAssistant';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -38,6 +38,7 @@ function App() {
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/predictions" element={<Predictions />} />
+            <Route path="/assistant" element={<AIAssistant />} />
           </Routes>
         </Layout>
       </Router>

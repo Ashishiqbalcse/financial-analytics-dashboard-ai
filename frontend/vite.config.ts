@@ -10,16 +10,16 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3001,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8006',
-        changeOrigin: true,
-      },
-      '/ws': {
-        target: 'ws://localhost:8006',
-        ws: true,
-      },
+  port: 3001,
+  proxy: {
+    '/api': {
+      target: 'http://127.0.0.1:7777',
+      changeOrigin: true,
+    },
+    '/ws': {
+      target: 'ws://127.0.0.1:7777',
+      ws: true,
     },
   },
+},
 })

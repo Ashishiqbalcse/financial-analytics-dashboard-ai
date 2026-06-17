@@ -30,10 +30,14 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setIsConnected(true);
-        reconnectAttempts.current = 0;
-        onConnect?.();
-      };
+  console.log("WS OPEN");
+
+  setIsConnected(true);
+
+  reconnectAttempts.current = 0;
+
+  onConnect?.();
+};
 
       ws.onmessage = (event) => {
         const message: WebSocketMessage = JSON.parse(event.data);
@@ -42,6 +46,7 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
       };
 
       ws.onclose = () => {
+        console.log("WS CLOSED");
         setIsConnected(false);
         onDisconnect?.();
         
@@ -53,6 +58,7 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
       };
 
       ws.onerror = (error) => {
+        console.log("WS ERROR", error);
         onError?.(error);
       };
     } catch (error) {
@@ -69,10 +75,20 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
   };
 
   const sendMessage = (message: any) => {
-    if (wsRef.current && isConnected) {
-      wsRef.current.send(JSON.stringify(message));
-    }
-  };
+  if (
+    wsRef.current &&
+    wsRef.current.readyState === WebSocket.OPEN
+  ) {
+    wsRef.current.send(
+      JSON.stringify(message)
+    );
+  } else {
+    console.warn(
+      "WebSocket not ready. Message skipped:",
+      message
+    );
+  }
+};
 
   const subscribe = (symbol: string) => {
     sendMessage({
