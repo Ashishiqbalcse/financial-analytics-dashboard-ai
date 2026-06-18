@@ -208,7 +208,18 @@ class MarketDataService:
                 interval
             )
 
+            # Fallback to Alpha Vantage
             if data is None or data.empty:
+                logger.warning(
+                    f"Yahoo failed for {symbol}, trying Alpha Vantage..."
+                )
+
+                data = await self.get_alpha_vantage_data(symbol)
+
+            if data is None or data.empty:
+                logger.error(
+                    f"All providers failed for {symbol}"
+                )
                 return None
 
             records = []
