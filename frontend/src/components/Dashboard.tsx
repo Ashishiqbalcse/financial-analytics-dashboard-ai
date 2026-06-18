@@ -18,7 +18,7 @@ const Dashboard = () => {
 
   const { isConnected } =
   useWebSocket(
-    `ws://localhost:7777/ws/${selectedSymbol}`,
+    `${import.meta.env.VITE_WS_URL}/ws/${selectedSymbol}`,
     {
       onMessage: (message) => {
         if (

@@ -79,6 +79,9 @@ app.add_middleware(
         "http://127.0.0.1:3002",
         "http://127.0.0.1:3003",
         "http://127.0.0.1:3004",
+
+        # Vercel Production
+        "https://financial-analytics-dashboard-ai.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
