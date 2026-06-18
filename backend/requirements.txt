@@ -7,7 +7,7 @@ psycopg2-binary>=2.9.12
 asyncpg==0.29.0
 redis==5.0.1
 pandas==2.3.1
-numpy==2.3.2
+numpy==1.26.4
 scikit-learn==1.7.1
 prophet==1.1.4
 yfinance==0.2.32
