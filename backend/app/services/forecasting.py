@@ -6,7 +6,7 @@ print("==========")
 import pandas as pd
 import numpy as np
 from prophet import Prophet
-from prophet.diagnostics import cross_validation, performance_metrics
+# from prophet.diagnostics import cross_validation, performance_metrics
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import logging
@@ -63,20 +63,30 @@ class ForecastingService:
                 raise ValueError(f"Insufficient data for {symbol}. Need at least 30 data points.")
             
             # Initialize and train Prophet model
-            model = Prophet(
-                daily_seasonality=True,
-                weekly_seasonality=True,
-                yearly_seasonality=False,  # Not enough data for yearly seasonality
-                changepoint_prior_scale=0.05,
-                seasonality_prior_scale=10.0,
-                holidays_prior_scale=10.0
+            logger.info(f"Creating Prophet model for {symbol}")
+
+            try:
+                model = Prophet()
+
+                logger.info("Prophet model created")
+
+                model.fit(df)
+
+                logger.info("Prophet training completed")
+
+            except Exception as e:
+                logger.exception(f"Prophet failed: {e}")
+                raise
+
+            logger.info(f"Generating {periods}-day forecast")
+
+            future = model.make_future_dataframe(
+                periods=periods
             )
-            
-            model.fit(df)
-            
-            # Make future dataframe for predictions
-            future = model.make_future_dataframe(periods=periods)
+
             forecast = model.predict(future)
+
+            logger.info("Forecast generated successfully")
             
             # Extract forecast results
             forecast_results = self._extract_forecast_results(forecast, periods)
@@ -96,9 +106,7 @@ class ForecastingService:
             redis_client.set(cache_key, model_data, ttl=self.cache_ttl)
             
             # Save model to disk
-            model_path = self.model_cache_dir / f"{symbol}_model.pkl"
-            with open(model_path, 'wb') as f:
-                pickle.dump(model, f)
+            logger.info("Skipping model pickle storage")
             
             logger.info(f"Successfully trained model for {symbol}")
             
