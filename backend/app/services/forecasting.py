@@ -1,3 +1,8 @@
+import prophet
+
+print("==========")
+print("PROPHET VERSION:", prophet.__version__)
+print("==========")
 import pandas as pd
 import numpy as np
 from prophet import Prophet
