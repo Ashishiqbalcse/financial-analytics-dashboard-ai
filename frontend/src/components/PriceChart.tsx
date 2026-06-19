@@ -41,8 +41,8 @@ const PriceChart: React.FC<PriceChartProps> = ({
         setError(null);
 
         const response = await api.get(
-          `/prices/${symbol}/historical?period=${timeframe}`
-        );
+        `/prices/${symbol}`
+      );
 
         setData(response.data);
       } catch (err) {
