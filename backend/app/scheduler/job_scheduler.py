@@ -43,7 +43,7 @@ class DataIngestionScheduler:
         try:
             self.scheduler.add_job(
                 self.ingest_all_symbols,
-                trigger=IntervalTrigger(minutes=1),
+                trigger=IntervalTrigger(minutes=30),
                 id="ingest_all_symbols",
                 replace_existing=True,
             )
