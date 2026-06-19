@@ -64,9 +64,19 @@ class ForecastingService:
             
             # Initialize and train Prophet model
             logger.info(f"Creating Prophet model for {symbol}")
+            
+            import prophet
+            import cmdstanpy
+
+            logger.info(f"PROPHET VERSION = {prophet.__version__}")
+            logger.info(f"CMDSTANPY VERSION = {cmdstanpy.__version__}")
 
             try:
                 model = Prophet()
+
+                logger.info(
+                f"Model attributes: {dir(model)}"
+            )
 
                 logger.info("Prophet model created")
 
